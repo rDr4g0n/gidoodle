@@ -10,11 +10,11 @@ log=$temp_dir/log_${id}.log
 scale=1
 start_delay_duration=2
 
-delete_temp=0
+delete_temp=1
 
 # get capture rect from user
 echo "Hey man, draw a rectangle with your mouse"
-rect_string="$(./rect)"
+rect_string="$(mousebox)"
 wait $!
 echo "$rect_string"
 

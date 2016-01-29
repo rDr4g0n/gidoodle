@@ -6,17 +6,17 @@ You'll need ffmpeg and uhh... linux?
 
 TODO
 ------
-* build/install
 * test portability
 * probably want to rewrite in python to clean this all up
 
-* select window mode
+* "select window" mode
 * confirm/clear selections before beginning
 * push config options up to user
     * scale
     * skip palette generation
     * choose out filename/path
     * start delay
+    * preserve logs
 * clean up messages
     * show final gif details (size, location, dimensions)
     * add progress spinner
