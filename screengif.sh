@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+#set -x
 
 # gidoodl (formerly gifbutt) v612.1
 # this lil guy makes is sickeasy to just make a thing
@@ -12,10 +12,12 @@ fps=25
 id=$(date +%s)
 temp_vid=$temp_dir/temp_${id}.mkv
 log=$temp_dir/log_${id}.log
+scale=1
 
 save_temp=1
 
 # get capture rect from user
+echo "Hey man, draw a rectangle with your mouse\n"
 rect_string="$(./rect)"
 wait $!
 echo "$rect_string"
@@ -67,7 +69,7 @@ fi
 # TODO - make palette optimization optional
 echo "generating palette. please hold onto all of your horses"
 palette=$temp_dir/palette_${id}.png
-filters="fps=$fps,scale=1366:-1:flags=lanczos"
+filters="fps=$fps,scale=iw*${scale}:ih*${scale}:flags=lanczos"
 ffmpeg -i $temp_vid \
     -vf "$filters,palettegen" \
     -y $palette &>> $log \
@@ -85,7 +87,7 @@ echo "\n\n" >> $log
 
 if [ -n $save_temp ]; then
     echo "cleanin up the mess i made earlier with all the hard work I was doing while you were just screwing around"
-    rm $temp_vid $palette
+    rm $temp_vid $palette $log
 fi
 
 # TODO - rename and move gif

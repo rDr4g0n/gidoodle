@@ -14,3 +14,4 @@ TODO
     * resize
     * dont generate palette
     * output file name/path
+* clean up messages, add spinner or something
