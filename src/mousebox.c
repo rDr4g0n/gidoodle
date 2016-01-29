@@ -4,67 +4,77 @@
 #include<X11/Xlib.h>
 #include<X11/cursorfont.h>
 
+typedef struct {
+    Display * disp;
+    Screen * scr;
+    Window root;
+} drawingContext;
+
+drawingContext * setupContext(){
+  drawingContext * ctx = (drawingContext*)malloc(sizeof(drawingContext));
+
+  ctx->disp = XOpenDisplay(NULL);
+  if(!ctx->disp){
+    return NULL;
+  }
+
+  ctx->scr = ScreenOfDisplay(ctx->disp, DefaultScreen(ctx->disp));
+  ctx->root = RootWindow(ctx->disp, XScreenNumberOfScreen(ctx->scr));
+  return ctx;
+}
+
+GC setupGC(drawingContext * ctx){
+  XGCValues * gcval = (XGCValues*)malloc(sizeof(XGCValues));
+  gcval->foreground = XWhitePixel(ctx->disp, 0);
+  gcval->function = GXxor;
+  gcval->background = XBlackPixel(ctx->disp, 0);
+  gcval->plane_mask = gcval->background ^ gcval->foreground;
+  gcval->subwindow_mode = IncludeInferiors;
+
+  GC gc;
+  gc = XCreateGC(ctx->disp, ctx->root,
+    GCFunction | GCForeground | GCBackground | GCSubwindowMode,
+    gcval);
+
+  return gc;
+}
+
 int main(void)
 {
+  // TODO - move these to structs
   int rx = 0, ry = 0, rw = 0, rh = 0;
   int rect_x = 0, rect_y = 0, rect_w = 0, rect_h = 0;
   int btn_pressed = 0, done = 0;
 
+  // setup window and all that fun stuff
+  drawingContext * ctx = setupContext();
+  if(ctx == NULL){
+      printf("Could not setup drawing context");
+      return EXIT_FAILURE;
+  }
+
+  GC gc = setupGC(ctx);
+
   XEvent ev;
-  Display *disp = XOpenDisplay(NULL);
 
-  if(!disp)
-    return EXIT_FAILURE;
-
-  Screen *scr = NULL;
-  scr = ScreenOfDisplay(disp, DefaultScreen(disp));
-
-  Window root = 0;
-  root = RootWindow(disp, XScreenNumberOfScreen(scr));
-
-  Cursor cursor, cursor2;
-  cursor = XCreateFontCursor(disp, XC_left_ptr);
-  cursor2 = XCreateFontCursor(disp, XC_lr_angle);
-
-  XGCValues gcval;
-  gcval.foreground = XWhitePixel(disp, 0);
-  gcval.function = GXxor;
-  gcval.background = XBlackPixel(disp, 0);
-  gcval.plane_mask = gcval.background ^ gcval.foreground;
-  gcval.subwindow_mode = IncludeInferiors;
-
-  GC gc;
-  gc = XCreateGC(disp, root,
-                 GCFunction | GCForeground | GCBackground | GCSubwindowMode,
-                 &gcval);
-
-  /* this XGrab* stuff makes XPending true ? */
   if ((XGrabPointer
-       (disp, root, False,
+       (ctx->disp, ctx->root, False,
         ButtonMotionMask | ButtonPressMask | ButtonReleaseMask, GrabModeAsync,
-        GrabModeAsync, root, cursor, CurrentTime) != GrabSuccess))
+        GrabModeAsync, ctx->root,
+        XCreateFontCursor(ctx->disp, XC_crosshair),
+        CurrentTime) != GrabSuccess))
     printf("couldn't grab pointer:");
 
-  if ((XGrabKeyboard
-       (disp, root, False, GrabModeAsync, GrabModeAsync,
-        CurrentTime) != GrabSuccess))
-    printf("couldn't grab keyboard:");
-
   while (!done) {
-    while (!done && XPending(disp)) {
-      XNextEvent(disp, &ev);
+    while (!done && XPending(ctx->disp)) {
+      XNextEvent(ctx->disp, &ev);
       switch (ev.type) {
         case MotionNotify:
         /* this case is purely for drawing rect on screen */
           if (btn_pressed) {
             if (rect_w) {
               /* re-draw the last rect to clear it */
-              XDrawRectangle(disp, root, gc, rect_x, rect_y, rect_w, rect_h);
-            } else {
-              /* Change the cursor to show we're selecting a region */
-              XChangeActivePointerGrab(disp,
-                                       ButtonMotionMask | ButtonReleaseMask,
-                                       cursor2, CurrentTime);
+              XDrawRectangle(ctx->disp, ctx->root, gc, rect_x, rect_y, rect_w, rect_h);
             }
             rect_x = rx;
             rect_y = ry;
@@ -80,8 +90,8 @@ int main(void)
               rect_h = 0 - rect_h;
             }
             /* draw rectangle */
-            XDrawRectangle(disp, root, gc, rect_x, rect_y, rect_w, rect_h);
-            XFlush(disp);
+            XDrawRectangle(ctx->disp, ctx->root, gc, rect_x, rect_y, rect_w, rect_h);
+            XFlush(ctx->disp);
           }
           break;
         case ButtonPress:
@@ -95,13 +105,15 @@ int main(void)
       }
     }
   }
+
   /* clear the drawn rectangle */
   if (rect_w) {
-    XDrawRectangle(disp, root, gc, rect_x, rect_y, rect_w, rect_h);
-    XFlush(disp);
+    XDrawRectangle(ctx->disp, ctx->root, gc, rect_x, rect_y, rect_w, rect_h);
+    XFlush(ctx->disp);
   }
   rw = ev.xbutton.x - rx;
   rh = ev.xbutton.y - ry;
+
   /* cursor moves backwards */
   if (rw < 0) {
     rx += rw;
@@ -112,7 +124,7 @@ int main(void)
     rh = 0 - rh;
   }
 
-  XCloseDisplay(disp);
+  XCloseDisplay(ctx->disp);
 
   printf("%d,%d,%d,%d\n",rx,ry,rw,rh);
 
