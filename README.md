@@ -8,7 +8,7 @@ TODO
 ------
 * build/install
 * test portability
-* make garbage code into something slightly less garbage
+* probably want to rewrite in python to clean this all up
 
 * select window mode
 * confirm/clear selections before beginning
@@ -16,7 +16,11 @@ TODO
     * scale
     * skip palette generation
     * choose out filename/path
+    * start delay
 * clean up messages
     * show final gif details (size, location, dimensions)
     * add progress spinner
 * ensure ffmpeg is all up on
+    * requires --enable-libx264
+* slice last n seconds from stop?
+* visual indication of delay countdown

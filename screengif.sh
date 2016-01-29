@@ -8,11 +8,12 @@ id=$(date +%s)
 temp_vid=$temp_dir/temp_${id}.mkv
 log=$temp_dir/log_${id}.log
 scale=1
+start_delay_duration=2
 
-save_temp=1
+delete_temp=0
 
 # get capture rect from user
-echo "Hey man, draw a rectangle with your mouse\n"
+echo "Hey man, draw a rectangle with your mouse"
 rect_string="$(./rect)"
 wait $!
 echo "$rect_string"
@@ -31,6 +32,9 @@ function die
     echo "${*} sucks."
     exit 1
 }
+
+echo "Waiting $start_delay_duration seconds to start recordin'"
+sleep $start_delay_duration
 
 # record
 # TODO -capture_cursor -capture_mouse_clicks \
@@ -80,7 +84,7 @@ ffmpeg -i $temp_vid -i $palette \
 
 echo "\n\n" >> $log
 
-if [ -n $save_temp ]; then
+if [ $delete_temp -eq 1 ]; then
     echo "cleanin up the mess i made earlier with all the hard work I was doing while you were just screwing around"
     rm $temp_vid $palette $log
 fi
