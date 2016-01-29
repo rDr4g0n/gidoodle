@@ -2,7 +2,9 @@ gidoodle (formerly gifbut) v508.009.010
 ==========
 You run it and then pick a place and then it makes a gif! Easy!
 
-You'll need ffmpeg and uhh... linux?
+You'll need ffmpeg with libx264 support.
+
+To install this guy all up in your stuff, `make install`. After that `gidoo` from the terminal will kick off the highly polished and sickeasy process.
 
 TODO
 ------
