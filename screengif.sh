@@ -1,11 +1,6 @@
 #!/bin/bash
 #set -x
 
-# gidoodl (formerly gifbutt) v612.1
-# this lil guy makes is sickeasy to just make a thing
-# on your screen into a gif. you need ffmpeg, and probably
-# a specific version or something
-
 temp_dir=~/tmp
 output_dir=~/tmp
 fps=25
@@ -55,7 +50,7 @@ fi
 
 ffmpeg_pid=$!
 
-read -p "Press any key to stop capture"
+read -p "Prex enter to stop capture"
 
 # TODO - if vid is too short, exit
 
