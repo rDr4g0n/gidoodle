@@ -35,7 +35,7 @@ int timestamp(){
 
 typedef struct Config {
     char tempDir[MAX_PATH_LENGTH];
-    char outputDir[MAX_PATH_LENGTH];
+    char outputPath[MAX_PATH_LENGTH];
     int fps;
     int scale;
     int startDelay;
@@ -57,7 +57,7 @@ Config * buildConfig(){
     // temp dir, output file, fps, scale, start delay, preserve temp
     // TODO - let user specify capture rectangle via cli
     strcpy(config->tempDir, "/home/jay/tmp");
-    strcpy(config->outputDir, "/home/jay/tmp");
+    strcpy(config->outputPath, "/home/jay/tmp/mygif.gif");
     // TODO - get ffmpeg path from os
     strcpy(config->ffmpegpath, "/usr/bin/ffmpeg");
     config->fps = 25;
@@ -139,6 +139,7 @@ int captureVideo(char * ffmpegpath, rect * r, int fps, char * vidpath, int start
     pushArg(cmd, "0");
     pushArg(cmd, "-preset");
     pushArg(cmd, "ultrafast");
+    pushArg(cmd, "-y");
     pushFArg(cmd, "%s", vidpath);
     endArgList(cmd);
     if(DEBUG){
@@ -254,9 +255,14 @@ int main(){
         return EXIT_FAILURE;
     }
 
-    // TODO - copy gif to output location
+    // copy gif to output location
+    char gifPath[MAX_PATH_LENGTH];
+    strcpy(gifPath, config->vidpath);
+    strcat(gifPath, ".gif");
+    rename(gifPath, config->outputPath);
+
     // TODO - filename, duration, size, resolution, etc
-    printf("Get ur gif at %s.gif\n", config->vidpath);
+    printf("Get ur gif at %s\n", config->outputPath);
 
     close(fd);
 
