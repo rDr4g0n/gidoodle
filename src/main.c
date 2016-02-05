@@ -1,14 +1,20 @@
+#define _POSIX_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <fcntl.h>
 #include <stdarg.h>
 
+#include "arglist.h"
 #include "mousebox.h"
 
 // TODO - get config from args and/or prefs file
 // TODO - use actual vars, not macros
-#define TEMP_DIR "~/tmp"
-#define OUTPUT_DIR "~/tmp"
+#define TEMP_DIR "/home/jay/tmp"
+#define OUTPUT_DIR "/home/jay/tmp"
 #define FPS 25
 #define ID "1234"
 #define TEMP_VID TEMP_DIR "/temp_" ID ".mkv"
@@ -44,46 +50,66 @@ int main(){
 
     debug("got rect x:%i, y:%i, w:%i, h:%i\n", r->x, r->y, r->w, r->h);
 
-    // TODO - use ffmpeg's c lib instead of popen
-    // build the ffmpeg command
-    char *capture = malloc(maxCommandLength);
-    snprintf(capture, maxCommandLength, "\
-ffmpeg \
--framerate %i \
--video_size %ix%i \
--f x11grab \
--i :0.0+%i,%i \
--an \
--vcodec libx264 -crf 0 -preset ultrafast \
-%s",
-    FPS, r->w, r->h, r->x, r->y, TEMP_VID);
+    ArgList * capture = createArgList();
+    pushArg(capture, "/usr/bin/ffmpeg");
+    pushArg(capture, "-framerate");
+    pushFArg(capture, "%i", FPS);
+    pushArg(capture, "-video_size");
+    pushFArg(capture, "%ix%i", r->w, r->h);
+    pushArg(capture, "-f");
+    pushArg(capture, "x11grab");
+    pushArg(capture, "-i");
+    pushFArg(capture, ":0.0+%i,%i", r->x, r->y);
+    pushArg(capture, "-an");
+    pushArg(capture, "-vcodec");
+    pushArg(capture, "libx264");
+    pushArg(capture, "-crf");
+    pushArg(capture, "0");
+    pushArg(capture, "-preset");
+    pushArg(capture, "ultrafast");
+    pushFArg(capture, "%s", TEMP_VID);
+    endArgList(capture);
+    prettyPrint(capture);
 
-    printf("capture command\n %s\n", capture);
+    //printf("Waiting %i seconds to begin recording...\n", START_DELAY);
+    //fflush(stdout);
+    //sleep(START_DELAY);
+    
+    int fd = open("/home/jay/tmp/out.log", O_WRONLY|O_CREAT);
+    if(fd < 0){
+        printf("ERROR: couldnt make that file, even a little bit\n");
+        return EXIT_FAILURE;
+    }
 
-    printf("Waiting %i seconds to being recording...\n", START_DELAY);
-    fflush(stdout);
-    sleep(START_DELAY);
+    // fork time guys
+    pid_t pid = fork();
+    if(pid == -1){
+        printf("ERROR: unable to fork for some raisin.\n");
+        return EXIT_FAILURE;
 
-    FILE * captureFile;
-    captureFile = popen(capture, "w");
-    // TODO - handle ffmpeg waiting on user input
-    // in some cases
-    // TODO - hide stdout/stderr
+    // child
+    } else if(pid == 0){
+        // wire stdout/stderr to file
+        printf("horses");
+        dup2(fd, STDERR_FILENO);
+        close(fd);
+
+        printf("starting ffmpeg\n");
+        execv(capture->list[0], capture->list);
+        printf("aww crap");
+        _exit(EXIT_FAILURE);
+    }
 
     printf("Prex any key to stop gidoodlin'\n");
     fflush(stdout);
     // wait on user
     getchar();
-
-    // send quit to ffmpeg
-    fprintf(captureFile, "q");
-    // TODO - ensure process ended
-
-    int captureRet = pclose(captureFile);
-    if(captureRet != 0){
-        printf("ERROR: problem stopping ffmpeg\n");
-        return EXIT_FAILURE;
-    }
+    printf("killin %i\n", pid);
+    kill(pid, SIGTERM);
+    int status;
+    wait(&status);
+    printf("pid %i returned status %i\n", pid, status);
+    freeArgList(capture);
 
     char *filters = malloc(maxCommandLength);
     snprintf(filters, maxCommandLength, "fps=%i,scale=iw*%i:ih*%i:flags=lanczos",
