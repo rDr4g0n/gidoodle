@@ -16,9 +16,6 @@
 
 #define DEBUG 0
 
-// for constructing ffmpeg commands
-const int maxCommandLength = 2000;
-
 void debug(const char *fmt, ...) {
     if(DEBUG){
         va_list args;
@@ -34,6 +31,7 @@ int timestamp(){
 
 #define MAX_PATH_LENGTH 1024
 #define MAX_ID_LENGTH 25
+#define MAX_FILTER_LENGTH 100
 
 typedef struct Config {
     char tempDir[MAX_PATH_LENGTH];
@@ -46,9 +44,158 @@ typedef struct Config {
     int scale;
     int startDelay;
     bool deleteTemp;
+    char filters[200];
+    int logFD;
+    // TODO - ffmpeg path
 } Config;
 
 Config config;
+
+int openLogFile(){
+    config.logFD = open(config.logPath, O_WRONLY|O_CREAT, 0664);
+    if(config.logFD < 0){
+        printf("ERROR: couldnt make that file, even a little bit\n");
+        return 1;
+    }
+    return 0;
+}
+
+int captureVideo(rect * r){
+    ArgList * capture = createArgList();
+    pushArg(capture, "/usr/bin/ffmpeg");
+    pushArg(capture, "-framerate");
+    pushFArg(capture, "%i", config.fps);
+    pushArg(capture, "-video_size");
+    pushFArg(capture, "%ix%i", r->w, r->h);
+    pushArg(capture, "-f");
+    pushArg(capture, "x11grab");
+    pushArg(capture, "-i");
+    pushFArg(capture, ":0.0+%i,%i", r->x, r->y);
+    pushArg(capture, "-an");
+    pushArg(capture, "-vcodec");
+    pushArg(capture, "libx264");
+    pushArg(capture, "-crf");
+    pushArg(capture, "0");
+    pushArg(capture, "-preset");
+    pushArg(capture, "ultrafast");
+    pushFArg(capture, "%s", config.tempVid);
+    endArgList(capture);
+    if(DEBUG){
+        prettyPrint(capture);
+    }
+
+    printf("Waiting %i seconds to begin recording...\n", config.startDelay);
+    fflush(stdout);
+    //sleep(config.startDelay);
+
+    pid_t pid = fork();
+    if(pid == -1){
+        printf("ERROR: unable to fork for some raisin.\n");
+        return 1;
+
+    // child
+    } else if(pid == 0){
+        // wire stdout/stderr to file
+        dup2(config.logFD, STDERR_FILENO);
+        close(config.logFD);
+        execv(capture->list[0], capture->list);
+        _exit(1);
+    }
+
+    printf("Prex any key to stop gidoodlin'\n");
+    debug("ffmpeg got pid %i", pid);
+    fflush(stdout);
+    // wait on user
+    getchar();
+    printf("Wait a tick...\n");
+    kill(pid, SIGTERM);
+    // TODO - handle errors
+    int status;
+    wait(&status);
+    freeArgList(capture);
+
+    return 0;
+}
+
+int generatePalette(){
+    // TODO - make palette optimization optional
+    // http://blog.pkh.me/p/21-high-quality-gif-with-ffmpeg.html
+    ArgList * palette = createArgList();
+    pushArg(palette, "/usr/bin/ffmpeg");
+    pushArg(palette, "-i");
+    pushFArg(palette, "%s", config.tempVid);
+    pushArg(palette, "-vf");
+    pushFArg(palette, "%s,palettegen", config.filters);
+    pushArg(palette, "-y");
+    pushFArg(palette, "%s", config.palette);
+    endArgList(palette);
+    if(DEBUG){
+        prettyPrint(palette);
+    }
+
+    pid_t pid = fork();
+    if(pid == -1){
+        printf("ERROR: unable to fork for some raisin.\n");
+        return 1;
+
+    // child
+    } else if(pid == 0){
+        // TODO - write some newlines to log
+        // wire stdout/stderr to file
+        dup2(config.logFD, STDERR_FILENO);
+        close(config.logFD);
+        execv(palette->list[0], palette->list);
+        _exit(1);
+    }
+
+    int status;
+    wait(&status);
+
+    freeArgList(palette);
+
+    return status;
+}
+
+// TODO - make this into a generic execute command
+int gifify(){
+    ArgList * gifify = createArgList();
+    pushArg(gifify, "/usr/bin/ffmpeg");
+    pushArg(gifify, "-i");
+    pushFArg(gifify, "%s", config.tempVid);
+    pushArg(gifify, "-i");
+    pushFArg(gifify, "%s", config.palette);
+    pushArg(gifify, "-lavfi");
+    pushFArg(gifify, "%s [x]; [x][1:v] paletteuse", config.filters);
+    pushArg(gifify, "-y");
+    pushFArg(gifify, "%s.gif", config.tempVid);
+    endArgList(gifify);
+    if(DEBUG){
+        prettyPrint(gifify);
+    }
+
+    pid_t pid = fork();
+    if(pid == -1){
+        printf("ERROR: unable to fork for some raisin.\n");
+        return 1;
+
+    // child
+    } else if(pid == 0){
+        // TODO - write some newlines to log
+        // wire stdout/stderr to file
+        // TODO - grab stdout?
+        dup2(config.logFD, STDERR_FILENO);
+        close(config.logFD);
+        execv(gifify->list[0], gifify->list);
+        _exit(1);
+    }
+
+    int status;
+    wait(&status);
+
+    freeArgList(gifify);
+
+    return status;
+}
 
 int main(){
     printf("Draw a rectangle over the area you want to capture\n");
@@ -78,6 +225,10 @@ int main(){
     config.startDelay = 2;
     config.deleteTemp = false;
 
+    snprintf(config.filters, MAX_FILTER_LENGTH,
+        "fps=%i,scale=iw*%i:ih*%i:flags=lanczos",
+        config.fps, config.scale, config.scale);
+
     rect * r = getBoundingBox();
 
     if(r == NULL){
@@ -87,105 +238,35 @@ int main(){
 
     debug("got rect x:%i, y:%i, w:%i, h:%i\n", r->x, r->y, r->w, r->h);
 
-    ArgList * capture = createArgList();
-    pushArg(capture, "/usr/bin/ffmpeg");
-    pushArg(capture, "-framerate");
-    pushFArg(capture, "%i", config.fps);
-    pushArg(capture, "-video_size");
-    pushFArg(capture, "%ix%i", r->w, r->h);
-    pushArg(capture, "-f");
-    pushArg(capture, "x11grab");
-    pushArg(capture, "-i");
-    pushFArg(capture, ":0.0+%i,%i", r->x, r->y);
-    pushArg(capture, "-an");
-    pushArg(capture, "-vcodec");
-    pushArg(capture, "libx264");
-    pushArg(capture, "-crf");
-
-    pushArg(capture, "0");
-    pushArg(capture, "-preset");
-    pushArg(capture, "ultrafast");
-    pushFArg(capture, "%s", config.tempVid);
-    endArgList(capture);
-
-    printf("Waiting %i seconds to begin recording...\n", config.startDelay);
-    fflush(stdout);
-    sleep(config.startDelay);
-    
-    int fd = open(config.logPath, O_WRONLY|O_CREAT, 0664);
-    if(fd < 0){
-        printf("ERROR: couldnt make that file, even a little bit\n");
+    int retval;
+    retval = openLogFile();
+    if(retval != 0){
+        printf("ERROR: couldn't open log file\n");
         return EXIT_FAILURE;
     }
 
-    // fork time guys
-    pid_t pid = fork();
-    if(pid == -1){
-        printf("ERROR: unable to fork for some raisin.\n");
-        return EXIT_FAILURE;
-
-    // child
-    } else if(pid == 0){
-        // wire stdout/stderr to file
-        dup2(fd, STDERR_FILENO);
-        close(fd);
-        execv(capture->list[0], capture->list);
-        _exit(EXIT_FAILURE);
-    }
-
-    printf("Prex any key to stop gidoodlin'\n");
-    debug("ffmpeg got pid %i", pid);
-    fflush(stdout);
-    // wait on user
-    getchar();
-    kill(pid, SIGTERM);
-    int status;
-    wait(&status);
-    freeArgList(capture);
-
-    char *filters = malloc(maxCommandLength);
-    snprintf(filters, maxCommandLength, "fps=%i,scale=iw*%i:ih*%i:flags=lanczos",
-    config.fps, config.scale, config.scale);
-
-    // http://blog.pkh.me/p/21-high-quality-gif-with-ffmpeg.html
-    // TODO - make palette optimization optional
-    char *palette = malloc(maxCommandLength);
-    snprintf(palette, maxCommandLength, "\
-ffmpeg -i %s \
--vf '%s,palettegen' \
--y %s",
-    config.tempVid, filters, config.palette);
-
-    debug("palette command\n %s\n", palette);
-
-    int paletteRet = system(palette);
-    if(paletteRet != 0){
-        printf("ERROR: palette generation returned %i\n", paletteRet);
+    retval = captureVideo(r);
+    if(retval != 0){
+        printf("ERROR: failed while capturing video\n");
         return EXIT_FAILURE;
     }
 
-    free(palette);
-
-    char *gifify = malloc(maxCommandLength);
-    snprintf(gifify, maxCommandLength, "\
-ffmpeg -i %s -i %s \
--lavfi '%s [x]; [x][1:v] paletteuse' \
--y %s.gif",
-    config.tempVid, config.palette, filters, config.tempVid);
-
-    debug("gifify command\n %s\n", gifify);
-
-    int gififyRet = system(gifify);
-    if(gififyRet != 0){
-        printf("ERROR: gifification returned %i\n", gififyRet);
+    retval = generatePalette();
+    if(retval != 0){
+        printf("ERROR: failed to generate palette\n");
         return EXIT_FAILURE;
     }
 
-    free(gifify);
-    free(filters);
+    retval = gifify();
+    if(retval != 0){
+        printf("ERROR: failed to convert to gif\n");
+        return EXIT_FAILURE;
+    }
+
+    // TODO - copy gif to output location
 
     // TODO - filename, duration, size, resolution, etc
-    printf("Did it!\n");
+    printf("Get ur gif at %s.gif\n", config.tempVid);
 
     // TODO - clean up temp files
 
