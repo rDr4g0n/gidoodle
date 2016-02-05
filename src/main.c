@@ -7,25 +7,15 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <stdarg.h>
+#include <time.h>
+#include <string.h>
+#include <stdbool.h>
 
 #include "arglist.h"
 #include "mousebox.h"
 
-// TODO - get config from args and/or prefs file
-// TODO - use actual vars, not macros
-#define TEMP_DIR "/home/jay/tmp"
-#define OUTPUT_DIR "/home/jay/tmp"
-#define FPS 25
-#define ID "1234"
-#define TEMP_VID TEMP_DIR "/temp_" ID ".mkv"
-#define LOG TEMP_DIR "/log_" ID ".log"
-#define PALETTE TEMP_DIR "/palette_" ID ".png"
-#define SCALE 1
-#define START_DELAY 2
-#define DELETE_TEMP 1
-
 #define DEBUG 0
-    
+
 // for constructing ffmpeg commands
 const int maxCommandLength = 2000;
 
@@ -38,8 +28,55 @@ void debug(const char *fmt, ...) {
     }
 }
 
+int timestamp(){
+    return (unsigned)time(NULL);
+}
+
+#define MAX_PATH_LENGTH 1024
+#define MAX_ID_LENGTH 25
+
+typedef struct Config {
+    char tempDir[MAX_PATH_LENGTH];
+    char outputDir[MAX_PATH_LENGTH];
+    int fps;
+    char id[MAX_ID_LENGTH];
+    char tempVid[MAX_PATH_LENGTH];
+    char logPath[MAX_PATH_LENGTH];
+    char palette[MAX_PATH_LENGTH];
+    int scale;
+    int startDelay;
+    bool deleteTemp;
+} Config;
+
+Config config;
+
 int main(){
     printf("Draw a rectangle over the area you want to capture\n");
+
+    strcpy(config.tempDir, "/home/jay/tmp");
+    strcpy(config.outputDir, "/home/jay/tmp");
+    config.fps = 25;
+
+    snprintf(config.id, MAX_ID_LENGTH, "%i", timestamp());
+
+    strcpy(config.tempVid, config.tempDir);
+    strcat(config.tempVid, "/");
+    strcat(config.tempVid, config.id);
+    strcat(config.tempVid, ".mkv");
+
+    strcpy(config.logPath, config.tempDir);
+    strcat(config.logPath, "/");
+    strcat(config.logPath, config.id);
+    strcat(config.logPath, ".log");
+
+    strcpy(config.palette, config.tempDir);
+    strcat(config.palette, "/");
+    strcat(config.palette, config.id);
+    strcat(config.palette, ".png");
+
+    config.scale = 1;
+    config.startDelay = 2;
+    config.deleteTemp = false;
 
     rect * r = getBoundingBox();
 
@@ -53,7 +90,7 @@ int main(){
     ArgList * capture = createArgList();
     pushArg(capture, "/usr/bin/ffmpeg");
     pushArg(capture, "-framerate");
-    pushFArg(capture, "%i", FPS);
+    pushFArg(capture, "%i", config.fps);
     pushArg(capture, "-video_size");
     pushFArg(capture, "%ix%i", r->w, r->h);
     pushArg(capture, "-f");
@@ -64,18 +101,18 @@ int main(){
     pushArg(capture, "-vcodec");
     pushArg(capture, "libx264");
     pushArg(capture, "-crf");
+
     pushArg(capture, "0");
     pushArg(capture, "-preset");
     pushArg(capture, "ultrafast");
-    pushFArg(capture, "%s", TEMP_VID);
+    pushFArg(capture, "%s", config.tempVid);
     endArgList(capture);
-    prettyPrint(capture);
 
-    //printf("Waiting %i seconds to begin recording...\n", START_DELAY);
-    //fflush(stdout);
-    //sleep(START_DELAY);
+    printf("Waiting %i seconds to begin recording...\n", config.startDelay);
+    fflush(stdout);
+    sleep(config.startDelay);
     
-    int fd = open("/home/jay/tmp/out.log", O_WRONLY|O_CREAT);
+    int fd = open(config.logPath, O_WRONLY|O_CREAT, 0664);
     if(fd < 0){
         printf("ERROR: couldnt make that file, even a little bit\n");
         return EXIT_FAILURE;
@@ -90,30 +127,25 @@ int main(){
     // child
     } else if(pid == 0){
         // wire stdout/stderr to file
-        printf("horses");
         dup2(fd, STDERR_FILENO);
         close(fd);
-
-        printf("starting ffmpeg\n");
         execv(capture->list[0], capture->list);
-        printf("aww crap");
         _exit(EXIT_FAILURE);
     }
 
     printf("Prex any key to stop gidoodlin'\n");
+    debug("ffmpeg got pid %i", pid);
     fflush(stdout);
     // wait on user
     getchar();
-    printf("killin %i\n", pid);
     kill(pid, SIGTERM);
     int status;
     wait(&status);
-    printf("pid %i returned status %i\n", pid, status);
     freeArgList(capture);
 
     char *filters = malloc(maxCommandLength);
     snprintf(filters, maxCommandLength, "fps=%i,scale=iw*%i:ih*%i:flags=lanczos",
-    FPS, SCALE, SCALE);
+    config.fps, config.scale, config.scale);
 
     // http://blog.pkh.me/p/21-high-quality-gif-with-ffmpeg.html
     // TODO - make palette optimization optional
@@ -122,7 +154,7 @@ int main(){
 ffmpeg -i %s \
 -vf '%s,palettegen' \
 -y %s",
-    TEMP_VID, filters, PALETTE);
+    config.tempVid, filters, config.palette);
 
     debug("palette command\n %s\n", palette);
 
@@ -139,7 +171,7 @@ ffmpeg -i %s \
 ffmpeg -i %s -i %s \
 -lavfi '%s [x]; [x][1:v] paletteuse' \
 -y %s.gif",
-    TEMP_VID, PALETTE, filters, TEMP_VID);
+    config.tempVid, config.palette, filters, config.tempVid);
 
     debug("gifify command\n %s\n", gifify);
 
