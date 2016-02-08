@@ -37,7 +37,7 @@ typedef struct Config {
     char tempDir[MAX_PATH_LENGTH];
     char outputPath[MAX_PATH_LENGTH];
     int fps;
-    int scale;
+    float scale;
     int startDelay;
     bool preserveTemp;
 
@@ -84,7 +84,7 @@ Config * buildConfig(){
     config->preserveTemp = true;
 
     snprintf(config->filters, MAX_FILTER_LENGTH,
-        "fps=%i,scale=iw*%i:ih*%i:flags=lanczos",
+        "fps=%i,scale=iw*%f:ih*%f:flags=lanczos",
         config->fps, config->scale, config->scale);
 
     return config;
