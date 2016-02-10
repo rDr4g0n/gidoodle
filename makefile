@@ -13,4 +13,7 @@ mousebox:
 	gcc -Wall -Wextra -o $(build)/mousebox $(mousebox_src) -lX11
 	chmod +x $(build)/mousebox
 
+dev:
+	gcc -Wall -Wextra -o $(build)/gidoo src/main.c src/mousebox.h src/mousebox.c src/arglist.h src/arglist.c -lX11 -std=c99
+
 .PHONY: mousebox install devinstall
