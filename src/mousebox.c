@@ -2,7 +2,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/keysym.h>
 #include <X11/cursorfont.h>
 
 rect * getBoundingBox(){
@@ -27,8 +30,7 @@ rect * getBoundingBox(){
   Screen *scr = NULL;
   scr = ScreenOfDisplay(disp, DefaultScreen(disp));
 
-  Window root = 0;
-  root = RootWindow(disp, XScreenNumberOfScreen(scr));
+  Window root = DefaultRootWindow(disp);
 
   Cursor cursor, cursor2;
   cursor = XCreateFontCursor(disp, XC_left_ptr);
@@ -50,13 +52,25 @@ rect * getBoundingBox(){
   if ((XGrabPointer
        (disp, root, False,
         ButtonMotionMask | ButtonPressMask | ButtonReleaseMask, GrabModeAsync,
-        GrabModeAsync, root, cursor, CurrentTime) != GrabSuccess))
-    printf("couldn't grab pointer:");
+        GrabModeAsync, root, cursor, CurrentTime) != GrabSuccess)){
+            printf("couldn't grab pointer:");
+  }
+
+  XGrabKeyboard(disp, root, False, GrabModeAsync, GrabModeAsync, CurrentTime);
 
   while (!done) {
     while (!done && XPending(disp)) {
       XNextEvent(disp, &ev);
       switch (ev.type) {
+        case KeyPress:;
+            unsigned int keycode = ((XKeyPressedEvent*)&ev)->keycode;
+            char * s = XKeysymToString(XKeycodeToKeysym(disp, keycode, 0));
+            // break on escape
+            if(!strcmp(s, "Escape")){
+                return 0;
+            }
+            break;
+
         case MotionNotify:
         /* this case is purely for drawing rect on screen */
           if (btn_pressed) {

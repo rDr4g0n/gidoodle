@@ -11,7 +11,7 @@
 #include "mousebox.h"
 #include "gidoo.h"
 
-bool DEBUG = true;
+bool DEBUG = false;
 
 int openLogFile(char * filePath){
     int fd = open(filePath, O_WRONLY|O_CREAT, 0664);
@@ -38,7 +38,7 @@ int main(int argc, char **argv){
         return EXIT_FAILURE;
     }
 
-    printf("Draw a rectangle over the area you want to capture\n");
+    printf("Draw a rectangle over the area you want to capture\nPress [Escape] to cancel\n");
     rect * r = getBoundingBox();
     if(r == NULL){
         printf("ERROR: couldn't get bounding box\n");
