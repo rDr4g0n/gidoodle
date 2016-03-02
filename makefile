@@ -2,7 +2,7 @@ build=build
 mousebox_src=src/mousebox.c
 install_dir=/usr/local/bin
 
-.DEFAULT_GOAL := install
+.DEFAULT_GOAL := compile
 
 create_build_dir:
 	mkdir -p $(build)
@@ -20,6 +20,6 @@ compile: create_build_dir
 		src/gidoo.h src/gidoo.c \
 		src/mousebox.h src/mousebox.c \
 		src/arglist.h src/arglist.c \
-		-lX11 -std=c99
+		-lX11 -std=gnu99
 
 .PHONY: clean install compile create_build_dir

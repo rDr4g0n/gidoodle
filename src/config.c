@@ -22,9 +22,10 @@ int parse_opt(int key, char * arg, struct argp_state * state){
 
     switch(key){
         // output file
-        case 'o':
-            strcpy(config->outputPath, arg);
-            // TODO - get full path if path is relative
+        case 'o':;
+            char absolutePath[MAX_PATH_LENGTH];
+            realpath(arg, absolutePath);
+            strcpy(config->outputPath, absolutePath);
             break;
 
         // scale
@@ -50,9 +51,9 @@ int parse_opt(int key, char * arg, struct argp_state * state){
 
         case ARGP_KEY_ARG:
             // shorthand for output file
-            // TODO - this probably aint right
-            strcpy(config->outputPath, arg);
-            break;
+            // TODO - this probably aint the right
+            // way to gather remaining args
+            return parse_opt('o', arg, state);
         case ARGP_KEY_END:
             break;
         default:
@@ -67,7 +68,7 @@ Config * buildConfig(int argc, char **argv){
     // default configs
     strcpy(config->outputPath, "/home/john/gidoos/mygif.gif");
     config->fps = 25;
-    config->scale = 0.75;
+    config->scale = 1;
     config->startDelay = 0;
     config->preserveTemp = true;
     // TODO - let user specify capture rectangle via cli

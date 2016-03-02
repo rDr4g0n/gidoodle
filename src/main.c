@@ -8,11 +8,10 @@
 
 #include "debug.h"
 #include "config.h"
-#include "arglist.h"
 #include "mousebox.h"
 #include "gidoo.h"
 
-bool DEBUG = false;
+bool DEBUG = true;
 
 int openLogFile(char * filePath){
     int fd = open(filePath, O_WRONLY|O_CREAT, 0664);
@@ -28,6 +27,16 @@ int main(int argc, char **argv){
 
     debug("Config\n outputPath: '%s'\n, fps: %i\n, scale: %f\n, startDelay: %i\n, verbose: %i\n",
             config->outputPath, config->fps, config->scale, config->startDelay, DEBUG);
+
+    // make sure ffmpeg exists and stuff
+    char ffmpegTestCommand[MAX_PATH_LENGTH];
+    strcpy(ffmpegTestCommand, config->ffmpegpath);
+    strcat(ffmpegTestCommand, " -version");
+    strcat(ffmpegTestCommand, " >/dev/null");
+    if(system(ffmpegTestCommand)){
+        printf("ERROR: couldn't find ffmpeg at '%s'\n", config->ffmpegpath);
+        return EXIT_FAILURE;
+    }
 
     printf("Draw a rectangle over the area you want to capture\n");
     rect * r = getBoundingBox();
@@ -64,6 +73,8 @@ int main(int argc, char **argv){
 
     // copy gif to output location
     char gifPath[MAX_PATH_LENGTH];
+    // TODO - dont automatically overwrite?
+    // TODO - verify if path is valid before recording? (fail early)
     strcpy(gifPath, config->vidpath);
     strcat(gifPath, ".gif");
     rename(gifPath, config->outputPath);
