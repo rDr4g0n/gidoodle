@@ -13,15 +13,11 @@ TODO
 ------
 * "select window" mode
 * confirm/clear selections before beginning
-* escape to cancel (when in drawing mode)
 * clean up messages
     * show final gif details (size, location, dimensions)
     * add progress spinner
-    * "ctrl+c" to quit
-* ensure ffmpeg is all up on
-    * requires --enable-libx264
-    * find location of ffmpeg instead of assuming its location
 * visual indication of delay countdown
 * interactive mode with a bunch of options after the video has been recorded
     * outfile location
     * slice beginning, slice end
+* config file, presets, last options

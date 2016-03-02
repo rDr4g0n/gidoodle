@@ -92,7 +92,6 @@ Config * buildConfig(int argc, char **argv){
     // calculated configy stuff
     // NOTE - overrides defaults and CLI configs
     strcpy(config->tempDir, "/tmp");
-    // TODO - get ffmpeg path from os
     strcpy(config->ffmpegpath, "/usr/bin/ffmpeg");
     snprintf(config->id, MAX_ID_LENGTH, "%i", timestamp());
     // tmp video
