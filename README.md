@@ -15,7 +15,7 @@ Usage
     gidoo mygif.gif
 
     # wait 3s then begin recording a gif
-    gidoo -d 2 mygif.gif
+    gidoo -d 3 mygif.gif
 
     # record a gif at half resolution
     gidoo -s 0.5 mygif.gif
