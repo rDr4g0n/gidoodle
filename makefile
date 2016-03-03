@@ -14,7 +14,8 @@ install: compile
 	install $(build)/gidoo $(install_dir)/gidoo
 
 compile: create_build_dir
-	gcc -Wall -Wextra -o $(build)/gidoo src/main.c \
+	gcc -Wall -Wextra -Wno-deprecated-declarations \
+		-o $(build)/gidoo src/main.c \
 		src/debug.h src/debug.c \
 		src/config.h src/config.c \
 		src/gidoo.h src/gidoo.c \

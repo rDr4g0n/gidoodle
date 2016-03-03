@@ -27,9 +27,6 @@ rect * getBoundingBox(){
     return NULL;
   }
 
-  Screen *scr = NULL;
-  scr = ScreenOfDisplay(disp, DefaultScreen(disp));
-
   Window root = DefaultRootWindow(disp);
 
   Cursor cursor, cursor2;

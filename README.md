@@ -7,7 +7,21 @@ This is an alpha, so stuff is a bit wonky, but it does the absolute minimum nece
 
 Installation
 ------
-To install this guy all up in your stuff, clone this repo, then `make`. That will compile the application and copy it to `usr/local/bin/gidoo` (this may need `sudo`?). After that `gidoo` from the terminal will kick off the highly polished and sickeasy process.
+To install this guy all up in your stuff, clone this repo, then `make install`. That will compile the application and copy it to `usr/local/bin/gidoo` (this may need `sudo`?). After that `gidoo` from the terminal will kick off the highly polished and sickeasy process.
+
+Usage
+------
+    # create mygif.gif in the current directory
+    gidoo mygif.gif
+
+    # wait 3s then begin recording a gif
+    gidoo -d 2 mygif.gif
+
+    # record a gif at half resolution
+    gidoo -s 0.5 mygif.gif
+
+    # help!
+    gidoo --help
 
 TODO
 ------
