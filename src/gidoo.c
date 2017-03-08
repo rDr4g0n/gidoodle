@@ -58,6 +58,40 @@ int captureVideo(char * ffmpegpath, rect * r, int fps, char * vidpath, int start
     return 0;
 }
 
+int captureScreenshot(char * ffmpegpath, rect * r, char * sspath, int logFD) {
+    ArgList * cmd = createArgList();
+
+    pushArg(cmd, ffmpegpath);
+    //pushArg(cmd, "-framerate");
+    //pushFArg(cmd, "%i", fps);
+    pushArg(cmd, "-t");
+    pushFArg(cmd, "%f", 0.1);
+    pushArg(cmd, "-video_size");
+    pushFArg(cmd, "%ix%i", r->w, r->h);
+    pushArg(cmd, "-f");
+    pushArg(cmd, "x11grab");
+    pushArg(cmd, "-i");
+    pushFArg(cmd, ":0.0+%i,%i", r->x, r->y);
+    pushArg(cmd, "-y");
+    pushArg(cmd, "-hide_banner");
+    pushArg(cmd, "-vframes");
+    pushArg(cmd, "1");
+    pushFArg(cmd, "%s", sspath);
+    endArgList(cmd);
+    if(DEBUG){
+        prettyPrint(cmd);
+    }
+
+    doAThing(cmd, logFD);
+
+    int status;
+    wait(&status);
+
+    freeArgList(cmd);
+
+    return status;
+}
+
 int generatePalette(char * ffmpegpath, char * vidpath, char * filters, char * palette, int logFD){
     // http://blog.pkh.me/p/21-high-quality-gif-with-ffmpeg.html
     ArgList * cmd = createArgList();

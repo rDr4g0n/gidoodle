@@ -48,6 +48,10 @@ int parse_opt(int key, char * arg, struct argp_state * state){
         case 129:
             sscanf(arg, "%i", &config->fps);
             break;
+        // screenshot
+        case 130:
+            config->screenshot = true;
+            break;
 
         case ARGP_KEY_ARG:
             // shorthand for output file
@@ -71,6 +75,7 @@ Config * buildConfig(int argc, char **argv){
     config->scale = 1;
     config->startDelay = 0;
     config->preserveTemp = true;
+    config->screenshot = false;
     // TODO - let user specify capture rectangle via cli
     // TODO - upload gif to places
 
@@ -83,6 +88,7 @@ Config * buildConfig(int argc, char **argv){
         {"delay", 'd', "DELAY", 0, "Delay in seconds before recording begins (default 0)", 0},
         {"verbose", 'v', 0, 0, "Enable debug messages", 0},
         {"preserve-temp", 128, 0, 0, "Preserve temp files (default false)", 0},
+        {"screenshot", 130, 0, 0, "Take a single screenshot (default false)", 0},
         {"fps", 129, "FPS", 0, "Capture and output framerate (default 30)", 0},
         {0}
     };
@@ -98,7 +104,11 @@ Config * buildConfig(int argc, char **argv){
     strcpy(config->vidpath, config->tempDir);
     strcat(config->vidpath, "/");
     strcat(config->vidpath, config->id);
-    strcat(config->vidpath, ".mkv");
+    if(config->screenshot){
+        strcat(config->vidpath, ".png");
+    } else {
+        strcat(config->vidpath, ".mkv");
+    }
     // tmp log
     // TODO - append to a running log of all jobs?
     strcpy(config->logPath, config->tempDir);

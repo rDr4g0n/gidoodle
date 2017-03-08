@@ -11,7 +11,7 @@
 #include "mousebox.h"
 #include "gidoo.h"
 
-bool DEBUG = false;
+bool DEBUG = true;
 
 int openLogFile(char * filePath){
     int fd = open(filePath, O_WRONLY|O_CREAT, 0664);
@@ -50,6 +50,28 @@ int main(int argc, char **argv){
     if(fd == -1){
         printf("ERROR: couldn't open log file\n");
         return EXIT_FAILURE;
+    }
+
+    if(config->screenshot){
+        int retval;
+        retval = captureScreenshot(config->ffmpegpath, r, config->vidpath, fd);
+        if(retval != 0){
+            printf("ERROR: failed while capturing screenshot\n");
+            return EXIT_FAILURE;
+        }
+
+        // copy gif to output location
+        char gifPath[MAX_PATH_LENGTH];
+        // TODO - dont automatically overwrite?
+        // TODO - verify if path is valid before recording? (fail early)
+        strcpy(gifPath, config->vidpath);
+        rename(gifPath, config->outputPath);
+
+        // TODO - filename, duration, size, resolution, etc
+        printf("Get ur png at %s\n", config->outputPath);
+
+        close(fd);
+        return EXIT_SUCCESS;
     }
 
     int retval;

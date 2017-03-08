@@ -18,6 +18,8 @@ typedef struct Config {
     int startDelay;
     bool preserveTemp;
 
+    bool screenshot;
+
     char id[MAX_ID_LENGTH];
     char vidpath[MAX_PATH_LENGTH];
     char logPath[MAX_PATH_LENGTH];
