@@ -5,9 +5,15 @@ You run it and then pick a place and then it makes a gif! Easy!
 Linux only for now. You'll also need ffmpeg with libx264 support.
 This is an alpha, so stuff is a bit wonky, but it does the absolute minimum necessary to make gifs. If you run into problems, open an issue on this repo.
 
+Prereqs
+-------
+* \*nix box
+* ffmpeg with libx264 support (try `ffmpeg -h 2>&1 | grep libx264` and see if `--enable-libx264` shows up there)
+* libx11 headers (in Ubuntu 16.10, this is found in libx11-dev)
+
 Installation
 ------
-To install this guy all up in your stuff, clone this repo, then `make install`. That will compile the application and copy it to `usr/local/bin/gidoo` (this may need `sudo`?). After that `gidoo` from the terminal will kick off the highly polished and sickeasy process.
+Clone this repo, then `make install`. That will compile the application and copy it to `usr/local/bin/gidoo` (this may need `sudo`?). Optionally you can just run `make` and launch the binary from this project's `build` directory.
 
 Usage
 ------
