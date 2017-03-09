@@ -11,7 +11,7 @@
 #include "mousebox.h"
 #include "gidoo.h"
 
-bool DEBUG = true;
+bool DEBUG = false;
 
 int openLogFile(char * filePath){
     int fd = open(filePath, O_WRONLY|O_CREAT, 0664);
