@@ -54,7 +54,7 @@ int main(int argc, char **argv){
 
     if(config->screenshot){
         int retval;
-        retval = captureScreenshot(config->ffmpegpath, r, config->vidpath, fd);
+        retval = captureScreenshot(config->ffmpegpath, r, config->vidpath, config->startDelay, fd);
         if(retval != 0){
             printf("ERROR: failed while capturing screenshot\n");
             return EXIT_FAILURE;

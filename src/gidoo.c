@@ -58,7 +58,7 @@ int captureVideo(char * ffmpegpath, rect * r, int fps, char * vidpath, int start
     return 0;
 }
 
-int captureScreenshot(char * ffmpegpath, rect * r, char * sspath, int logFD) {
+int captureScreenshot(char * ffmpegpath, rect * r, char * sspath, int startDelay, int logFD) {
     ArgList * cmd = createArgList();
 
     pushArg(cmd, ffmpegpath);
@@ -80,6 +80,12 @@ int captureScreenshot(char * ffmpegpath, rect * r, char * sspath, int logFD) {
     endArgList(cmd);
     if(DEBUG){
         prettyPrint(cmd);
+    }
+
+    if(startDelay > 0){
+        printf("Waiting %i seconds to take screenshot...\n", startDelay);
+        fflush(stdout);
+        sleep(startDelay);
     }
 
     doAThing(cmd, logFD);

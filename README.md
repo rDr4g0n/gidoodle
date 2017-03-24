@@ -41,3 +41,4 @@ TODO
     * outfile location
     * slice beginning, slice end
 * config file, presets, last options
+* screenshot send to clipboard
