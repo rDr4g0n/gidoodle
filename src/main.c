@@ -65,7 +65,11 @@ int main(int argc, char **argv){
         // TODO - dont automatically overwrite?
         // TODO - verify if path is valid before recording? (fail early)
         strcpy(gifPath, config->vidpath);
-        rename(gifPath, config->outputPath);
+        retval = rename(gifPath, config->outputPath);
+        if(retval != 0){
+            printf("ERROR: failed copying tmp file '%s' to destination '%s'", gifPath, config->outputPath);
+            return EXIT_FAILURE;
+        }
 
         // TODO - filename, duration, size, resolution, etc
         printf("Get ur png at %s\n", config->outputPath);
